@@ -13,4 +13,8 @@ income forms. This data it then exported as a JSON file, to be used later.
 After parsing, Eldora uses autohotkey to next enter the data into Drake Tax Software.
 It does this by taking the json data and converting it into a .ahk script
 
+## Resources
+https://www.autohotkey.com/docs/v2/KeyList.htm
 
+
+Format Json: :%!jq .
