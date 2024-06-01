@@ -10,7 +10,7 @@ const filePath = "./data/EIN_DB"
 type Eins map[string]bool
 
 /*
-   Parse Eins from EIN_DB Drake File
+Parse Eins from EIN_DB Drake File
 */
 func GetEins() (eins Eins) {
 
@@ -48,6 +48,8 @@ func GetEins() (eins Eins) {
 
 		offset += chunkSize
 	}
+
+	// Temp to avoid problems
 
 	return eins
 }

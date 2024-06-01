@@ -1,6 +1,7 @@
 package forms
 
 type W2 struct {
+	Script                string
 	Ts                    field `json:"ts"`
 	F                     field `json:"f"`
 	SpecialTaxTreatment   field `json:"special_tax_treatment"`
@@ -85,7 +86,7 @@ type W2 struct {
 	Agent                 field `json:"agent"`
 }
 
-func (W2 *W2) Build(onFile bool, idx int) (output string) {
+func (W2 *W2) Build(onFile bool) (script string) {
 
 	var fields []field
 
@@ -176,17 +177,9 @@ func (W2 *W2) Build(onFile bool, idx int) (output string) {
 	fields = append(fields, W2.Tin)
 	fields = append(fields, W2.Agent)
 
-	output += "W2{Enter}"
-
-	for i := 0; i < idx; i++ {
-		output += "{PgDn}{PgDn}"
-	}
-
-	for _, field := range fields {
-		output += string(field) + "{Tab}"
-	}
-
-	output += "{Esc}"
-
-	return output
+	existEntryWin := "Existing Forms List - W2: Wages"
+	script += openFormEntryWindow("W2", existEntryWin)
+	script += fillEntryWindow(fields)
+	script += closeFormEntryWindow()
+	return script
 }
