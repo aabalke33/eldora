@@ -55,14 +55,14 @@ func (Int *Int) Build(onFile bool) (script string) {
 	fields = append(fields, Int.DoNotUpdate)
 	fields = append(fields, Int.PayerTIN)
 
-    if !onFile {
-        fields = append(fields, Int.SSN)
-        fields = append(fields, Int.PayerName)
-        fields = append(fields, Int.PayerStreet)
-        fields = append(fields, Int.PayerCity)
-        fields = append(fields, Int.PayerState)
-        fields = append(fields, Int.PayerZip)
-    }
+	if !onFile {
+		fields = append(fields, Int.SSN)
+		fields = append(fields, Int.PayerName)
+		fields = append(fields, Int.PayerStreet)
+		fields = append(fields, Int.PayerCity)
+		fields = append(fields, Int.PayerState)
+		fields = append(fields, Int.PayerZip)
+	}
 
 	fields = append(fields, Int.AccountNumber)
 	fields = append(fields, Int.RtnNumber)

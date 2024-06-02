@@ -8,11 +8,11 @@ import (
 
 type field string
 
-type form interface {
+type Form interface {
 	Build(onFile bool) (script string)
 }
 
-func FillForm(jsonPath string, form form) {
+func FillForm(jsonPath string, form Form) {
 
 	bytes, err := os.ReadFile(jsonPath)
 	if err != nil {
@@ -38,12 +38,12 @@ func openFormEntryWindow(search, existEntryWin string) (script string) {
         }
         `, existEntryWin)
 
-	script += fmt.Sprintf(
-		`if !WinExist("%s") {
+	script +=
+		`if !WinExist(userWin) {
             MsgBox "the Entry Box did not open"
             ExitApp
         }
-        `, DrakeWin)
+        `
 
 	return script
 }
@@ -63,12 +63,11 @@ func closeFormEntryWindow() (script string) {
 
 	script += "{Esc}\"\n"
 
-	script += fmt.Sprintf(
-		`if !WinExist("%s") {
+	script += (`if !WinExist(userWin) {
             MsgBox "The entry page did not close properly"
             ExitApp
         }
-        `, DrakeWin)
+        `)
 
 	return script
 }
