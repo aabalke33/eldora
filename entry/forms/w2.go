@@ -5,7 +5,7 @@ type W2 struct {
 	Ts                    field `json:"ts"`
 	F                     field `json:"f"`
 	SpecialTaxTreatment   field `json:"special_tax_treatment"`
-	Ein                   field `json:"ein"`
+	PayerTin              field `json:"ein"`
 	EmployerName          field `json:"employer_name"`
 	EmployerNameCont      field `json:"employer_name_cont"`
 	EmployerStreet        field `json:"employer_street"`
@@ -93,7 +93,7 @@ func (W2 *W2) Build(onFile bool) (script string) {
 	fields = append(fields, W2.Ts)
 	fields = append(fields, W2.F)
 	fields = append(fields, W2.SpecialTaxTreatment)
-	fields = append(fields, W2.Ein)
+	fields = append(fields, W2.PayerTin)
 
 	if !onFile {
 		fields = append(fields, W2.EmployerName)

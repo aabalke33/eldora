@@ -41,31 +41,31 @@ func main() {
     }
     `, user.SSN, user.LastName, user.FirstName)
 
-	//output += writeW2s([]string{
-	//	"./data/w2.json",
-	//	"./data/w2_2.json",
-	//	"./data/w2_3.json",
-	//}, eins)
+	output += writeW2s([]string{
+		"./data/w2.json",
+		"./data/w2_2.json",
+		"./data/w2_3.json",
+	}, eins)
 
-	//output += writeInts([]string{
-	//	"./data/int.json",
-	//	"./data/int_2.json",
-	//	"./data/int.json",
-	//	"./data/int_2.json",
-	//}, eins)
+	output += writeInts([]string{
+		"./data/int.json",
+		"./data/int_2.json",
+		"./data/int.json",
+		"./data/int_2.json",
+	}, eins)
 
-//	output += writeDivs([]string{
-//		"./data/div.json",
-//		"./data/div_2.json",
-//		"./data/div.json",
-//		"./data/div_2.json",
-//	}, eins)
+	output += writeDivs([]string{
+		"./data/div.json",
+		"./data/div_2.json",
+		"./data/div.json",
+		"./data/div_2.json",
+	}, eins)
 
 	output += writeRetirement([]string{
 		"./data/retirement.json",
-//		"./data/retiremdiv_2.json",
-//		"./data/retiremdiv.json",
-//		"./data/retiremdiv_2.json",
+		"./data/retirement_2.json",
+		"./data/retirement.json",
+		"./data/retirement_2.json",
 	}, eins)
 
 	d1 := []byte(output)
@@ -79,7 +79,7 @@ func writeW2s(files []string, eins ein.Eins) (output string) {
 	for _, file := range files {
 		w2 := forms.W2{}
 		forms.FillForm(file, &w2)
-		if eins[string(w2.Ein)] {
+		if eins[w2.PayerTin.(string)] {
 			output += w2.Build(true)
 			continue
 		}
@@ -94,7 +94,7 @@ func writeInts(files []string, eins ein.Eins) (output string) {
 	for _, file := range files {
 		int := forms.Int{}
 		forms.FillForm(file, &int)
-		if eins[string(int.PayerTIN)] {
+		if eins[int.PayerTIN.(string)] {
 			output += int.Build(true)
 			continue
 		}
@@ -109,7 +109,7 @@ func writeDivs(files []string, eins ein.Eins) (output string) {
 	for _, file := range files {
 		div := forms.Div{}
 		forms.FillForm(file, &div)
-		if eins[string(div.PayerTIN)] {
+		if eins[div.PayerTIN.(string)] {
 			output += div.Build(true)
 			continue
 		}
@@ -124,7 +124,7 @@ func writeRetirement(files []string, eins ein.Eins) (output string) {
 	for _, file := range files {
 		retirement := forms.Retirement{}
 		forms.FillForm(file, &retirement)
-		if eins[string(retirement.PayerTIN)] {
+		if eins[retirement.PayerTIN.(string)] {
 			output += retirement.Build(true)
 			continue
 		}

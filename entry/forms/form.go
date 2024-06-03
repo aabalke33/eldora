@@ -4,9 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strconv"
 )
 
-type field string
+type field any
 
 type Form interface {
 	Build(onFile bool) (script string)
@@ -26,7 +27,11 @@ func FillForm(jsonPath string, form Form) {
 
 func openFormEntryWindow(search, existEntryWin string) (script string) {
 
-	script += fmt.Sprintf("Send \"%s{Enter}\"\n", search)
+	script += fmt.Sprintf(
+        `
+        Sleep 2000
+        Send "%s{Enter}"
+        `, search)
 
 	script += fmt.Sprintf(
 		`
@@ -53,7 +58,16 @@ func fillEntryWindow(fields []field) (script string) {
 	script += fmt.Sprintf("Send \"")
 
 	for _, field := range fields {
-		script += string(field) + "{Tab}"
+		switch f := field.(type) {
+		case string:
+			script += f
+		case int:
+			script += strconv.Itoa(f)
+		case bool:
+			script += "{Space}"
+		}
+
+		script += "{Tab}"
 	}
 
 	return script

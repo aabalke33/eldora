@@ -5,7 +5,7 @@ import (
 	"os"
 )
 
-const filePath = "./data/EIN_DB"
+const filePath = "C:/DRAKE23/DBF/EIN_DB"
 
 type Eins map[string]bool
 
