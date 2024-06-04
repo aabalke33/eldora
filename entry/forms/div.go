@@ -6,7 +6,7 @@ type Div struct {
 	F                        field `json:"f"`
 	St                       field `json:"st"`
 	DoNotUpdate              field `json:"do_not_update"`
-	PayerTIN                 field `json:"payer_tin"`
+	PayerTin                 field `json:"payer_tin"`
 	SSN                      field `json:"ssn"`
 	PayerName                field `json:"payer_name"`
 	PayerStreet              field `json:"payer_street"`
@@ -46,52 +46,65 @@ func (Div *Div) Build(onFile bool) (script string) {
 
 	var fields []field
 
-	fields = append(fields, Div.Tsj)
-	fields = append(fields, Div.F)
-	fields = append(fields, Div.St)
-	fields = append(fields, Div.DoNotUpdate)
-	fields = append(fields, Div.PayerTIN)
+	fields = append(
+		fields,
+		Div.Tsj,
+		Div.F,
+		Div.St,
+		Div.DoNotUpdate,
+		Div.PayerTin,
+	)
 
 	if !onFile {
-		fields = append(fields, Div.SSN)
-		fields = append(fields, Div.PayerName)
-		fields = append(fields, Div.PayerStreet)
-		fields = append(fields, Div.PayerCity)
-		fields = append(fields, Div.PayerState)
-		fields = append(fields, Div.PayerZip)
+		fields = append(
+			fields,
+			Div.SSN,
+			Div.PayerName,
+			Div.PayerStreet,
+			Div.PayerCity,
+			Div.PayerState,
+			Div.PayerZip,
+		)
 	}
 
-	fields = append(fields, Div.AccountNumber)
-	fields = append(fields, Div.Fatca)
-	fields = append(fields, Div.OrdinaryDividends)
-	fields = append(fields, Div.QualifiedDividends)
-	fields = append(fields, Div.CapitalGainDistribution)
-	fields = append(fields, Div.TwentyFivePercentRage)
-	fields = append(fields, Div.Section1202Quarter)
-	fields = append(fields, Div.Section1202)
-	fields = append(fields, Div.CollectiblesGain)
-	fields = append(fields, Div.Section897Dividends)
-	fields = append(fields, Div.Section897CapitalGain)
-	fields = append(fields, Div.NondividendDistribution)
-	fields = append(fields, Div.Withholding)
-	fields = append(fields, Div.Section199ADividends)
-	fields = append(fields, Div.InvestmentExpenses)
-	fields = append(fields, Div.ForeignTaxPaid)
-	fields = append(fields, Div.ForeignCountry)
-	fields = append(fields, Div.CashLiquidation)
-	fields = append(fields, Div.NonCashLiquidation)
-	fields = append(fields, Div.ExemptInterestDividends)
-	fields = append(fields, Div.SpecifiedPrivateActivity)
-	fields = append(fields, Div.State1)
-	fields = append(fields, Div.State1Id)
-	fields = append(fields, Div.State1Withholding)
-	fields = append(fields, Div.State2)
-	fields = append(fields, Div.State2Id)
-	fields = append(fields, Div.State2Withholding)
+	fields = append(
+		fields,
+		Div.AccountNumber,
+		Div.Fatca,
+		Div.OrdinaryDividends,
+		Div.QualifiedDividends,
+		Div.CapitalGainDistribution,
+		Div.TwentyFivePercentRage,
+		Div.Section1202Quarter,
+		Div.Section1202,
+		Div.CollectiblesGain,
+		Div.Section897Dividends,
+		Div.Section897CapitalGain,
+		Div.NondividendDistribution,
+		Div.Withholding,
+		Div.Section199ADividends,
+		Div.InvestmentExpenses,
+		Div.ForeignTaxPaid,
+		Div.ForeignCountry,
+		Div.CashLiquidation,
+		Div.NonCashLiquidation,
+		Div.ExemptInterestDividends,
+		Div.SpecifiedPrivateActivity,
+		Div.State1,
+		Div.State1Id,
+		Div.State1Withholding,
+		Div.State2,
+		Div.State2Id,
+		Div.State2Withholding,
+	)
 
 	existEntryWin := "Existing Forms List - DIV: 1099-DIV, Dividend Income"
 	script += openFormEntryWindow("DIV", existEntryWin)
 	script += fillEntryWindow(fields)
 	script += closeFormEntryWindow()
 	return script
+}
+
+func (Div *Div) GetTin() (payerTin field) {
+	return Div.PayerTin
 }

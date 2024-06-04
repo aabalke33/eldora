@@ -7,12 +7,20 @@ import (
 
 const filePath = "C:/DRAKE23/DBF/EIN_DB"
 
-type Eins map[string]bool
+type Eins struct {
+	Eins map[string]bool
+}
+
+func NewEins() *Eins {
+	e := Eins{}
+	e.Eins = make(map[string]bool)
+	return &e
+}
 
 /*
 Parse Eins from EIN_DB Drake File
 */
-func GetEins() (eins Eins) {
+func (Eins *Eins) ReadDb() {
 
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -28,8 +36,6 @@ func GetEins() (eins Eins) {
 	buffer := make([]byte, readSize)
 	offset := int64(0)
 
-	eins = make(Eins)
-
 	for {
 
 		_, err := file.Seek(offset, io.SeekStart)
@@ -44,12 +50,17 @@ func GetEins() (eins Eins) {
 			panic(err)
 		}
 
-		eins[string(buffer)] = true
+		Eins.Eins[string(buffer)] = true
 
 		offset += chunkSize
 	}
+}
 
-	// Temp to avoid problems
-
-	return eins
+/*
+Add Eins as ahk script compiler runs, to avoid state mismatches between forms
+ex. if new ein, and first form enters, second form with same ein need to skip
+extra data
+*/
+func (Eins *Eins) Add(ein string) {
+	Eins.Eins[ein] = true
 }

@@ -6,7 +6,7 @@ type Retirement struct {
 	F                         field `json:"f"`
 	Type                      field `json:"type"`
 	Corrected                 field `json:"corrected"`
-	PayerTIN                  field `json:"payer_tin"`
+	PayerTin                  field `json:"payer_tin"`
 	PayerName                 field `json:"payer_name"`
 	PayerStreet               field `json:"payer_street"`
 	PayerCity                 field `json:"payer_city"`
@@ -15,15 +15,15 @@ type Retirement struct {
 	PayerPhone                field `json:"payer_phone"`
 	GrossDistribution         field `json:"gross_distribution"`
 	Taxable                   field `json:"taxable"`
-	NotDetermined             field  `json:"not_determined"`
-	TotalDistribution         field  `json:"total_distribution"`
+	NotDetermined             field `json:"not_determined"`
+	TotalDistribution         field `json:"total_distribution"`
 	CapitalGain               field `json:"capital_gain"`
 	Withholding               field `json:"withholding"`
 	EmployeeContribution      field `json:"employee_contribution"`
 	UnrealizedAppreciation    field `json:"unrealized_appreciation"`
 	DistributionCode1         field `json:"distribution_code_1"`
 	DistributionCode2         field `json:"distribution_code_2"`
-	IRA                       field  `json:"ira"`
+	IRA                       field `json:"ira"`
 	Other                     field `json:"other"`
 	OtherPercentage           field `json:"other_percentage"`
 	TaxpayerPercent           field `json:"taxpayer_percent"`
@@ -49,55 +49,68 @@ func (retirement *Retirement) Build(onFile bool) (script string) {
 
 	var fields []field
 
-	fields = append(fields, retirement.Tsj)
-	fields = append(fields, retirement.F)
-	fields = append(fields, retirement.Type)
-	fields = append(fields, retirement.Corrected)
-	fields = append(fields, retirement.PayerTIN)
+	fields = append(
+		fields,
+		retirement.Tsj,
+		retirement.F,
+		retirement.Type,
+		retirement.Corrected,
+		retirement.PayerTin,
+	)
 
 	if !onFile {
-		fields = append(fields, retirement.PayerName)
-		fields = append(fields, retirement.PayerStreet)
-		fields = append(fields, retirement.PayerCity)
-		fields = append(fields, retirement.PayerState)
-		fields = append(fields, retirement.PayerZip)
-		fields = append(fields, retirement.PayerPhone)
+		fields = append(
+			fields,
+			retirement.PayerName,
+			retirement.PayerStreet,
+			retirement.PayerCity,
+			retirement.PayerState,
+			retirement.PayerZip,
+			retirement.PayerPhone,
+		)
 	}
 
-	fields = append(fields, retirement.GrossDistribution)
-	fields = append(fields, retirement.Taxable)
-	fields = append(fields, retirement.NotDetermined)
-	fields = append(fields, retirement.TotalDistribution)
-	fields = append(fields, retirement.CapitalGain)
-	fields = append(fields, retirement.Withholding)
-	fields = append(fields, retirement.EmployeeContribution)
-	fields = append(fields, retirement.UnrealizedAppreciation)
-	fields = append(fields, retirement.DistributionCode1)
-	fields = append(fields, retirement.DistributionCode2)
-	fields = append(fields, retirement.IRA)
-	fields = append(fields, retirement.Other)
-	fields = append(fields, retirement.OtherPercentage)
-	fields = append(fields, retirement.TaxpayerPercent)
-	fields = append(fields, retirement.TotalEmployeeContribution)
-	fields = append(fields, retirement.IrrAllocable)
-	fields = append(fields, retirement.FirstYearRoth)
-	fields = append(fields, retirement.Fatca)
-	fields = append(fields, retirement.State1Withholding)
-	fields = append(fields, retirement.State1)
-	fields = append(fields, retirement.State1Id)
-	fields = append(fields, retirement.State1Distribution)
-	fields = append(fields, retirement.Local1Withholding)
-	fields = append(fields, retirement.Local1Distribution)
-	fields = append(fields, retirement.State2Withholding)
-	fields = append(fields, retirement.State2)
-	fields = append(fields, retirement.State2Id)
-	fields = append(fields, retirement.State2Distribution)
-	fields = append(fields, retirement.Local2Withholding)
-	fields = append(fields, retirement.Local2Distribution)
+	fields = append(
+		fields,
+		retirement.GrossDistribution,
+		retirement.Taxable,
+		retirement.NotDetermined,
+		retirement.TotalDistribution,
+		retirement.CapitalGain,
+		retirement.Withholding,
+		retirement.EmployeeContribution,
+		retirement.UnrealizedAppreciation,
+		retirement.DistributionCode1,
+		retirement.DistributionCode2,
+		retirement.IRA,
+		retirement.Other,
+		retirement.OtherPercentage,
+		retirement.TaxpayerPercent,
+		retirement.TotalEmployeeContribution,
+		retirement.IrrAllocable,
+		retirement.FirstYearRoth,
+		retirement.Fatca,
+		retirement.State1Withholding,
+		retirement.State1,
+		retirement.State1Id,
+		retirement.State1Distribution,
+		retirement.Local1Withholding,
+		retirement.Local1Distribution,
+		retirement.State2Withholding,
+		retirement.State2,
+		retirement.State2Id,
+		retirement.State2Distribution,
+		retirement.Local2Withholding,
+		retirement.Local2Distribution,
+	)
 
 	existEntryWin := "Existing Forms List - 1099: 1099-R, Retirement"
 	script += openFormEntryWindow("1099", existEntryWin)
 	script += fillEntryWindow(fields)
 	script += closeFormEntryWindow()
 	return script
+}
+
+func (Retirement *Retirement) GetTin() (payerTin field) {
+	return Retirement.PayerTin
 }

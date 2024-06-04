@@ -11,6 +11,7 @@ type field any
 
 type Form interface {
 	Build(onFile bool) (script string)
+	GetTin() (payerTin field)
 }
 
 func FillForm(jsonPath string, form Form) {
@@ -28,7 +29,7 @@ func FillForm(jsonPath string, form Form) {
 func openFormEntryWindow(search, existEntryWin string) (script string) {
 
 	script += fmt.Sprintf(
-        `
+		`
         Sleep 2000
         Send "%s{Enter}"
         `, search)
@@ -36,7 +37,7 @@ func openFormEntryWindow(search, existEntryWin string) (script string) {
 	script += fmt.Sprintf(
 		`
         Sleep 2000
-        if WinExist("%s") {
+        if WinActive("%s") {
             Send "{Enter}"
         } else {
             seekNewForm()
@@ -44,7 +45,9 @@ func openFormEntryWindow(search, existEntryWin string) (script string) {
         `, existEntryWin)
 
 	script +=
-		`if !WinExist(userWin) {
+		`
+        Sleep 1000
+        if !WinActive(userWin) {
             MsgBox "the Entry Box did not open"
             ExitApp
         }
@@ -77,7 +80,7 @@ func closeFormEntryWindow() (script string) {
 
 	script += "{Esc}\"\n"
 
-	script += (`if !WinExist(userWin) {
+	script += (`if !WinActive(userWin) {
             MsgBox "The entry page did not close properly"
             ExitApp
         }

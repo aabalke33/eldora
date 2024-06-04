@@ -90,96 +90,107 @@ func (W2 *W2) Build(onFile bool) (script string) {
 
 	var fields []field
 
-	fields = append(fields, W2.Ts)
-	fields = append(fields, W2.F)
-	fields = append(fields, W2.SpecialTaxTreatment)
-	fields = append(fields, W2.PayerTin)
+	fields = append(fields,
+		W2.Ts,
+		W2.F,
+		W2.SpecialTaxTreatment,
+		W2.PayerTin,
+	)
 
 	if !onFile {
-		fields = append(fields, W2.EmployerName)
-		fields = append(fields, W2.EmployerNameCont)
-		fields = append(fields, W2.EmployerStreet)
-		fields = append(fields, W2.EmployerCity)
-		fields = append(fields, W2.EmployerState)
-		fields = append(fields, W2.EmployerZip)
-		fields = append(fields, W2.EmployeeFirst)
-		fields = append(fields, W2.EmployeeLast)
-		fields = append(fields, W2.EmployeeStreet)
-		fields = append(fields, W2.EmployeeCity)
-		fields = append(fields, W2.EmployeeState)
-		fields = append(fields, W2.EmployeeZip)
+		fields = append(fields,
+			W2.EmployerName,
+			W2.EmployerNameCont,
+			W2.EmployerStreet,
+			W2.EmployerCity,
+			W2.EmployerState,
+			W2.EmployerZip,
+			W2.EmployeeFirst,
+			W2.EmployeeLast,
+			W2.EmployeeStreet,
+			W2.EmployeeCity,
+			W2.EmployeeState,
+			W2.EmployeeZip,
+		)
 	}
 
-	fields = append(fields, W2.Wages)
-	fields = append(fields, W2.Withholding)
-	fields = append(fields, W2.SocialWages)
-	fields = append(fields, W2.SocialWithholding)
-	fields = append(fields, W2.MedicareWages)
-	fields = append(fields, W2.MedicareWithholding)
-	fields = append(fields, W2.SocialTips)
-	fields = append(fields, W2.AllocatedTips)
-	fields = append(fields, W2.DependentCareBenefits)
-	fields = append(fields, W2.NonqualifiedPlans)
-	fields = append(fields, W2.Box121Code)
-	fields = append(fields, W2.Box121Amount)
-	fields = append(fields, W2.Box121Year)
-	fields = append(fields, W2.Box122Code)
-	fields = append(fields, W2.Box122Amount)
-	fields = append(fields, W2.Box122Year)
-	fields = append(fields, W2.Box123Code)
-	fields = append(fields, W2.Box123Amount)
-	fields = append(fields, W2.Box123Year)
-	fields = append(fields, W2.Box124Code)
-	fields = append(fields, W2.Box124Amount)
-	fields = append(fields, W2.Box124Year)
-	fields = append(fields, W2.Statutory)
-	fields = append(fields, W2.Retirement)
-	fields = append(fields, W2.Sick)
-	fields = append(fields, W2.Other1)
-	fields = append(fields, W2.Other1Amount)
-	fields = append(fields, W2.Other2)
-	fields = append(fields, W2.Other2Amount)
-	fields = append(fields, W2.Other3)
-	fields = append(fields, W2.Other3Amount)
-	fields = append(fields, W2.Other4)
-	fields = append(fields, W2.Other4Amount)
-	fields = append(fields, W2.State1)
-	fields = append(fields, W2.State1Id)
-	fields = append(fields, W2.State1Wages)
-	fields = append(fields, W2.State1Withholding)
-	fields = append(fields, "")
-	fields = append(fields, "")
-	fields = append(fields, "")
-	fields = append(fields, W2.State2)
-	fields = append(fields, W2.State2Id)
-	fields = append(fields, W2.State2Wages)
-	fields = append(fields, W2.State2Withholding)
-	fields = append(fields, "")
-	fields = append(fields, "")
-	fields = append(fields, "")
-	fields = append(fields, W2.State3)
-	fields = append(fields, W2.State3Id)
-	fields = append(fields, W2.State3Wages)
-	fields = append(fields, W2.State3Withholding)
-	fields = append(fields, "")
-	fields = append(fields, "")
-	fields = append(fields, "")
-	fields = append(fields, W2.State4)
-	fields = append(fields, W2.State4Id)
-	fields = append(fields, W2.State4Wages)
-	fields = append(fields, W2.State4Withholding)
-	fields = append(fields, "")
-	fields = append(fields, "")
-	fields = append(fields, "")
-	fields = append(fields, W2.Nonstandard)
-	fields = append(fields, W2.Corrected)
-	fields = append(fields, W2.DoNotUpdate)
-	fields = append(fields, W2.Tin)
-	fields = append(fields, W2.Agent)
+	fields = append(
+		fields,
+		W2.Wages,
+		W2.Withholding,
+		W2.SocialWages,
+		W2.SocialWithholding,
+		W2.MedicareWages,
+		W2.MedicareWithholding,
+		W2.SocialTips,
+		W2.AllocatedTips,
+		W2.DependentCareBenefits,
+		W2.NonqualifiedPlans,
+		W2.Box121Code,
+		W2.Box121Amount,
+		W2.Box121Year,
+		W2.Box122Code,
+		W2.Box122Amount,
+		W2.Box122Year,
+		W2.Box123Code,
+		W2.Box123Amount,
+		W2.Box123Year,
+		W2.Box124Code,
+		W2.Box124Amount,
+		W2.Box124Year,
+		W2.Statutory,
+		W2.Retirement,
+		W2.Sick,
+		W2.Other1,
+		W2.Other1Amount,
+		W2.Other2,
+		W2.Other2Amount,
+		W2.Other3,
+		W2.Other3Amount,
+		W2.Other4,
+		W2.Other4Amount,
+		W2.State1,
+		W2.State1Id,
+		W2.State1Wages,
+		W2.State1Withholding,
+		"",
+		"",
+		"",
+		W2.State2,
+		W2.State2Id,
+		W2.State2Wages,
+		W2.State2Withholding,
+		"",
+		"",
+		"",
+		W2.State3,
+		W2.State3Id,
+		W2.State3Wages,
+		W2.State3Withholding,
+		"",
+		"",
+		"",
+		W2.State4,
+		W2.State4Id,
+		W2.State4Wages,
+		W2.State4Withholding,
+		"",
+		"",
+		"",
+		W2.Nonstandard,
+		W2.Corrected,
+		W2.DoNotUpdate,
+		W2.Tin,
+		W2.Agent,
+	)
 
 	existEntryWin := "Existing Forms List - W2: Wages"
 	script += openFormEntryWindow("W2", existEntryWin)
 	script += fillEntryWindow(fields)
 	script += closeFormEntryWindow()
 	return script
+}
+
+func (W2 *W2) GetTin() (payerTin field) {
+	return W2.PayerTin
 }

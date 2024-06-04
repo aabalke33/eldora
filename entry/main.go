@@ -7,9 +7,22 @@ import (
 	"os"
 )
 
+type formType int
+
+const (
+	W2 formType = iota
+	Int
+	Div
+	Retirement
+	Ssa
+	W2g
+	G
+)
+
 func main() {
 
-	eins := ein.GetEins()
+	eins := *ein.NewEins()
+	eins.ReadDb()
 
 	output := fmt.Sprintf(`
     #Requires AutoHotkey >=2.0
@@ -41,94 +54,88 @@ func main() {
     }
     `, user.SSN, user.LastName, user.FirstName)
 
-	output += writeW2s([]string{
+	output += writeForms([]string{
 		"./data/w2.json",
 		"./data/w2_2.json",
 		"./data/w2_3.json",
-	}, eins)
+	}, eins, W2)
 
-	output += writeInts([]string{
+	output += writeForms([]string{
 		"./data/int.json",
 		"./data/int_2.json",
 		"./data/int.json",
 		"./data/int_2.json",
-	}, eins)
+	}, eins, Int)
 
-	output += writeDivs([]string{
+	output += writeForms([]string{
 		"./data/div.json",
 		"./data/div_2.json",
 		"./data/div.json",
 		"./data/div_2.json",
-	}, eins)
+	}, eins, Div)
 
-	output += writeRetirement([]string{
+	output += writeForms([]string{
 		"./data/retirement.json",
 		"./data/retirement_2.json",
 		"./data/retirement.json",
 		"./data/retirement_2.json",
-	}, eins)
+	}, eins, Retirement)
 
-	d1 := []byte(output)
-	if err := os.WriteFile("output.ahk", d1, 0644); err != nil {
+	output += writeForms([]string{
+		"./data/ssa1.json",
+		"./data/ssa2.json",
+		"./data/ssa1.json",
+		"./data/ssa2.json",
+	}, eins, Ssa)
+
+	output += writeForms([]string{
+		"./data/w2g.json",
+		"./data/w2g2.json",
+		"./data/w2g.json",
+		"./data/w2g2.json",
+	}, eins, W2g)
+
+	output += writeForms([]string{
+		"./data/99g.json",
+		"./data/99g2.json",
+	}, eins, G)
+
+	if err := os.WriteFile("output.ahk", []byte(output), 0644); err != nil {
 		panic(err)
 	}
 }
 
-func writeW2s(files []string, eins ein.Eins) (output string) {
+func writeForms(files []string, eins ein.Eins, formType formType) (output string) {
 
 	for _, file := range files {
-		w2 := forms.W2{}
-		forms.FillForm(file, &w2)
-		if eins[w2.PayerTin.(string)] {
-			output += w2.Build(true)
+		var form forms.Form
+		switch formType {
+		case W2:
+			form = &forms.W2{}
+		case Int:
+			form = &forms.Int{}
+		case Div:
+			form = &forms.Div{}
+		case Retirement:
+			form = &forms.Retirement{}
+		case Ssa:
+			form = &forms.Ssa{}
+		case W2g:
+			form = &forms.W2g{}
+		case G:
+			form = &forms.G{}
+		}
+
+		forms.FillForm(file, form)
+
+		ein := form.GetTin().(string)
+		if eins.Eins[ein] {
+			output += form.Build(true)
 			continue
 		}
-		output += w2.Build(false)
-	}
 
-	return output
-}
-
-func writeInts(files []string, eins ein.Eins) (output string) {
-
-	for _, file := range files {
-		int := forms.Int{}
-		forms.FillForm(file, &int)
-		if eins[int.PayerTIN.(string)] {
-			output += int.Build(true)
-			continue
-		}
-		output += int.Build(false)
-	}
-
-	return output
-}
-
-func writeDivs(files []string, eins ein.Eins) (output string) {
-
-	for _, file := range files {
-		div := forms.Div{}
-		forms.FillForm(file, &div)
-		if eins[div.PayerTIN.(string)] {
-			output += div.Build(true)
-			continue
-		}
-		output += div.Build(false)
-	}
-
-	return output
-}
-
-func writeRetirement(files []string, eins ein.Eins) (output string) {
-
-	for _, file := range files {
-		retirement := forms.Retirement{}
-		forms.FillForm(file, &retirement)
-		if eins[retirement.PayerTIN.(string)] {
-			output += retirement.Build(true)
-			continue
-		}
-		output += retirement.Build(false)
+		eins.Add(ein)
+		output += form.Build(false)
 	}
 
 	return output
