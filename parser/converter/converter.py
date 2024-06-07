@@ -1,0 +1,36 @@
+from pdf2image import convert_from_path
+import os
+import cv2
+import numpy as np
+
+def convert_files(directory: str):
+
+    imgs = []
+
+    for file in os.listdir(directory):
+
+        source_path = f"{directory}/{file}"
+
+        if not os.path.isfile(source_path):
+            print(f"File {file} does not exist")
+            continue
+
+        if file.endswith(".jpg") or file.endswith(".png"):
+            imgs.append(cv2.imread(source_path))
+            continue
+
+        if file.endswith(".pdf"): 
+
+            poppler = os.environ['POPPLER_PATH']
+
+            pages = convert_from_path(
+                    source_path,
+                    poppler_path=poppler
+                    )
+
+            for page in pages:
+                img = np.array(page)
+                img = img[..., (2, 1, 0)]
+                imgs.append(img)
+
+    return imgs
