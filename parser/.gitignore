@@ -2,4 +2,5 @@
 .env
 data
 temp
+faz
 **/__pycache__

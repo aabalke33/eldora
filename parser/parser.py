@@ -12,8 +12,13 @@ if __name__ == "__main__":
     imgs = con.convert_files("./data")
 
     for i, img in enumerate(imgs):
-        form = rec.Form(img)
-        form.process()
-        form.export(f"./temp/{i}.jpg")
+        if i:
+            form = rec.Form(img)
+            form.process(True)
+            form.export(f"./temp/{i}.jpg")
+
+    
+
+
 
     timer.stop()

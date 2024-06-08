@@ -14,6 +14,17 @@ Steps
 OpenCV, Tesseract
 
 
+Need to flip 90 degree images
+May need to handle multiple forms per scan
+
+DevMap:
+
+1. Hone in Tesseract
+2. Parse Tesseract Data and convert to json
+
+
+Classifier may not be necessary, specifying locations in ocr may not be necessary
+
 
 Resources:
 https://towardsdatascience.com/pre-processing-in-ocr-fc231c6035a7

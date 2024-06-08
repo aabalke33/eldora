@@ -21,12 +21,28 @@ class Form:
 
     def process(self, export: bool = False):
         if export: self.export("./1_original.jpg")
+        self.resize()
+        if export: self.export("./2_resized.jpg")
         self.preprocess()
-        if export: self.export("./2_preprocess.jpg")
+        if export: self.export("./3_preprocess.jpg")
         self.crop_image()
-        if export: self.export("./3_cropped.jpg")
+        if export: self.export("./4_cropped.jpg")
+#        self.erosion()
+#        if export: self.export("./5_erosion.jpg")
         self.correct_skew()
-        if export: self.export("./4_deskew.jpg")
+        if export: self.export("./6_deskew.jpg")
+
+    def resize(self):
+        height, width = self.img.shape[:2]
+
+        # assumes dpi 200
+        multi = 3
+        points = (width * multi, height * multi)
+        self.img = cv2.resize(
+                self.img,
+                points,
+                interpolation=cv2.INTER_CUBIC
+                )
 
     def preprocess(self):
         grayscale = cv2.cvtColor(self.img, cv2.COLOR_BGR2GRAY)
@@ -35,7 +51,7 @@ class Form:
             255, 
             cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
             cv2.THRESH_BINARY, 
-            11,
+            33,
             25
         )
 
@@ -81,6 +97,12 @@ class Form:
 
         self.img = self.img[y:y+h, x:x+w]
 
+#    def erosion(self):
+#        size = 2
+#        kernel = np.ones((size, size), np.uint8)
+#        self.img = cv2.dilate(self.img, kernel, iterations=1)
+#        #self.img = cv2.erode(self.img, kernel, iterations=1)
+
     def correct_skew(self, delta=1, limit=5):
         def determine_score(arr, angle):
             data = ndimage.rotate(arr, angle, reshape=False, order=0)
@@ -88,7 +110,8 @@ class Form:
             score = np.sum((histogram[1:] - histogram[:-1]) ** 2, dtype=float)
             return histogram, score
 
-        thresh = cv2.threshold(self.img, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)[1] 
+        thresh = cv2.threshold(self.img, 0, 255, cv2.THRESH_BINARY_INV + 
+                cv2.THRESH_OTSU)[1] 
 
         scores = []
         angles = np.arange(-limit, limit + delta, delta)
