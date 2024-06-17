@@ -3,13 +3,16 @@ import numpy as np
 from scipy import ndimage
 # Future: may want to split if multiple forms on one page
 
-class Form:
+class FormImageProcessor:
     def __init__(self, img) -> None:
         #self.img = cv2.imread(path)
         self.img = img
         if self.img is None:
             print(f"Image could not be loaded.")
             exit(0)
+
+    def get_image(self):
+        return self.img
 
     def export(self, path):
         cv2.imwrite(path, self.img)

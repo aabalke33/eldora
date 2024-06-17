@@ -1,6 +1,6 @@
 .venv
 .env
 data
-temp
-faz
 **/__pycache__
+export
+exporter
