@@ -4,71 +4,34 @@ import subprocess
 import os
 import numpy as np
 import spacy
-from autocorrect import Speller
 from multiprocessing.dummy import Pool as ThreadPool
-
-# Lookup form data to find best match
 from collections import Counter
+from datetime import datetime
 
-w2 = [
-	"w2",
-	"wages",
-	"wage",
-	"employee",
-	"employees",
-	"employer",
-	"employers",
-	"tips",
-	"other",
-	"12a",
-	"12b",
-	"12c",
-	"12d",
-	"ein"
-]
-
-retirement = [
-	"1099r",
-	"retirement",
-	"irr",
-	"roth",
-	"fatca",
-	"distribution",
-	"distributions",
-	"ira",
-	"sep",
-	"simple",
-	"recipient",
-	"recipients",
-	"payer",
-	"payers",
-	"gross",
-]
-
-class FormInfoParser:
-    def __init__(self, form_words):
-        self.counter = Counter(form_words)
-
-    def _count_matches(self, form_type_data) -> int:
-        return sum({
-            value: self.counter[value] for value in form_type_data}.values())
-
-    def get_type(self):
-
-        counts = {
-            'w2': self._count_matches(w2),
-            '1099r': self._count_matches(retirement),
-        }
-
-        return max(counts, key=lambda k: (counts[k]))
+form_data = {
+    'wages': [
+        "w2", "wages", "wage", "employee", "employees", "employer", "employers",
+        "tips", "other", "12a", "12b", "12c", "12d", "ein"
+    ],
+    'retirement': [
+        "1099r", "retirement", "irr", "roth", "fatca", "distribution",
+        "distributions", "ira", "sep", "simple", "recipient", "recipients",
+        "payer", "payers", "gross"
+    ],
+    'interest': [
+        "interest", "1099int", "int", "payer", "payers", "withdrawal",
+        "recipient", "recipients", "savings", "treasury", "bond", "market"
+        ]
+}
 
 class FormOcr:
 
-    form_type = None
     slices = []
+    slice_data = []
 
     def __init__(self, directory) -> None:
         self.directory = directory
+        self.recognize()
 
     def recognize(self):
 
@@ -84,33 +47,25 @@ class FormOcr:
         pool.close()
         pool.join()
 
-        self.get_type()
+        self.get_general_info()
 
-    def get_type(self):
+    def get_general_info(self):
         cleaned_words = []
 
         for slice in self.slices:
             for line in slice.data:
-                words = line.split()
-                for word in words:
+                for word in line.split():
                     cleaned_word = re.sub(r'[^a-zA-Z0-9]', '', word).lower()
                     cleaned_words.append(cleaned_word)
 
-        parser = FormInfoParser(cleaned_words)
+        parser = FormParser(cleaned_words)
         self.form_type = parser.get_type()
-
-    def get_year(self):
-        for slice in self.slices:
-            if "2022" in slice.data:
-                print("2022")
-                self.form_year = 2022
-            if "2023" in slice.data:
-                print("2023")
-                self.form_year = 2023
+        self.form_year = parser.get_year()
 
     def print(self):
         for slice in self.slices:
-            print(slice.data)
+            #print(slice.data)
+            slice.parse()
 
 class SliceOcr:
 
@@ -131,28 +86,104 @@ class SliceOcr:
 
         self.data = p.stdout.splitlines()
 
-        #self.field, self.value = self.parse()
-
     def parse(self):
-#       
-#        match len(self.data):
-#            case 2 | 3 | 4:
-#                print("----------------------------")
-#                print("Key", self.data[0])
-#                print("Value", self.data[1:])
-#                print("----------------------------")
-#                return self.data[0], self.data[1:]
-##            case 3:
-##                return self.data[0], self.data[1:]
-##            case 4:
-##                return self.data[0], self.data[1:]
-#            case _:
-#                print("----------------------------")
-#                print("No Pattern")
-#                print("----------------------------")
-#                return "", ""
+        parser = SliceParser(self.data)
+        print("-------------------------------------")
+        print("Key:\t", parser.key)
+        print("Value:\t", parser.value)
+        print("-------------------------------------")
+
+class FormParser:
+    def __init__(self, form_words):
+        self.counter = Counter(form_words)
+
+    def _count_matches(self, form_type_data) -> int:
+        return sum({
+            value: self.counter[value] for value in form_type_data}.values())
+
+    def get_type(self):
+
+        counts = dict() 
+
+        for k, v in form_data.items():
+            counts[k] = self._count_matches(v)
+
+        max_key = max(counts, key=lambda k: (counts[k]))
+        if counts[max_key] < 5:
+            return None
+
+        return max_key
+
+    def get_year(self):
+        this_year = datetime.now().year
+
+        common_year, common_count = 0, 0
+
+        for i in range(this_year-10, this_year):
+            count = self._count_matches([str(i)])
+            if count > common_count:
+                common_count = count
+                common_year = i
+
+        if common_year == 0:
+            return None
+
+        return common_year
+
+class SliceParser:
+
+    key = None
+    value = None
+
+    def __init__(self, slice_lines) -> None:
+        match len(slice_lines):
+            case 1:
+                self.parse_single_line(slice_lines)
+            case 2:
+                self.parse_two_lines(slice_lines)
+            case 3 | 4:
+                self.parse_multi_lines(slice_lines)
+
+    def _line_is_dollar(self, line_words):
+        return len(line_words) == 1 and self._is_dollar(line_words[0])
+
+    def _is_dollar(self, word):
+        pattern = r'^\d{1,3}(,\d{3})*(\.\d+)?$'
+        return bool(re.fullmatch(pattern, word))
+
+    # Will need to extend further
+    def parse_single_line(self, slice_lines):
+        return
+#        line_words = slice_lines[0].split()
 #
+#        if len(line_words) == 1:
+#            return
 #
+#        for i, word in enumerate(line_words):
+#            if self._is_dollar(word):
+#                self.key = line_words[0:i]
+#                self.value = word
+#                return
+
+    # Will need to extend further
+    def parse_two_lines(self, slice_lines):
+        self.key = slice_lines[0]
+        self.value = slice_lines[1]
+
+
+    # Will need to extend further
+    def parse_multi_lines(self, slice_lines):
+        self.key = slice_lines[0]
+        self.value = slice_lines[1:]
 #
-#        print("split len", len(self.data))
-        return "", ""
+#        top_words = slice_lines[0].split()
+#        if self._line_is_dollar(top_words):
+#            self.value = slice_lines[0]
+#            self.key = slice_lines[1:]
+#            return
+#
+#        bottom_words = slice_lines[-1].split()
+#        if self._line_is_dollar(bottom_words):
+#            self.value = slice_lines[-1]
+#            self.key = slice_lines[:-1]
+#            return
