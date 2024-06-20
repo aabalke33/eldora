@@ -7,6 +7,8 @@ class FormImageProcessor:
     def __init__(self, img) -> None:
         #self.img = cv2.imread(path)
         self.img = img
+        self.state = 0
+
         if self.img is None:
             print(f"Image could not be loaded.")
             exit(0)
@@ -30,22 +32,27 @@ class FormImageProcessor:
         if export: self.export("./3_preprocess.jpg")
         self.crop_image()
         if export: self.export("./4_cropped.jpg")
-#        self.erosion()
-#        if export: self.export("./5_erosion.jpg")
         self.correct_skew()
         if export: self.export("./6_deskew.jpg")
 
-    def resize(self):
-        height, width = self.img.shape[:2]
+        if self.state == 0:
+            self.state = 1
 
-        # assumes dpi 200
-        multi = 3
-        points = (width * multi, height * multi)
-        self.img = cv2.resize(
+    def resize(self, ratio=3.0, img=None, interpolation=cv2.INTER_CUBIC, immutable=False):
+        height, width = self.img.shape[:2]
+        
+        if img is not None:
+            height, width = img.shape[:2]
+
+        image = cv2.resize(
                 self.img,
-                points,
-                interpolation=cv2.INTER_CUBIC
+                (int(width * ratio), int(height * ratio)),
+                interpolation=interpolation
                 )
+        #if immutable:
+        #    return image
+        
+        self.img = image
 
     def preprocess(self):
         grayscale = cv2.cvtColor(self.img, cv2.COLOR_BGR2GRAY)
@@ -98,13 +105,22 @@ class FormImageProcessor:
         largest_contour = max(contours, key=cv2.contourArea)
         x, y, w, h = cv2.boundingRect(largest_contour)
 
-        self.img = self.img[y:y+h, x:x+w]
+        temp_image = self.img[y:y+h, x:x+w]
+        self.img = temp_image
+        size_limit = 6000
 
-#    def erosion(self):
-#        size = 2
-#        kernel = np.ones((size, size), np.uint8)
-#        self.img = cv2.dilate(self.img, kernel, iterations=1)
-#        #self.img = cv2.erode(self.img, kernel, iterations=1)
+        if max(w, h) > size_limit:
+            self.state = -1
+        #    ratio = size_limit / max(w, h)
+        #    self.resize(ratio, temp_image, interpolation=cv2.INTER_AREA)
+        #    self.erosion()
+        #    self.crop_image()
+
+    def erosion(self):
+        size = 2
+        kernel = np.ones((size, size), np.uint8)
+        #self.img = cv2.dilate(self.img, kernel, iterations=1)
+        self.img = cv2.erode(self.img, kernel, iterations=1)
 
     def correct_skew(self, delta=1, limit=5):
         def determine_score(arr, angle):

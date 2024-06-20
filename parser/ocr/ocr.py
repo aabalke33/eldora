@@ -21,7 +21,7 @@ form_data = {
     'interest': [
         "interest", "1099int", "int", "payer", "payers", "withdrawal",
         "recipient", "recipients", "savings", "treasury", "bond", "market"
-        ]
+    ]
 }
 
 class FormOcr:
