@@ -4,7 +4,8 @@ from dev.timer import Timer
 from dotenv import load_dotenv
 from multiprocessing.dummy import Pool as ThreadPool
 from matplotlib import pyplot as plt
-#from ocr import ocr
+from ocr import ocr
+from temp import directory
 
 load_dotenv()
 
@@ -30,9 +31,7 @@ if __name__ == "__main__":
     #pool.starmap(process_image, zip(imgs, paths))
     #pool.close()
     #pool.join()
-
-    #form = ocr.FormOcr(directory)
-    #print(form.form_type)
-    #print(form.form_year)
-    #form.print()
+    form = ocr.Ocr(directory)
+    form.parse()
+    form.print()
     timer.stop()

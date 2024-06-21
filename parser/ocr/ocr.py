@@ -1,43 +1,122 @@
-import pandas as pd
 import re
 import subprocess
 import os
-import numpy as np
-import spacy
 from multiprocessing.dummy import Pool as ThreadPool
 from collections import Counter
 from datetime import datetime
+from typing import List
+from ocr.const import form_data, key_data, valid_ein_prefixes, StatusCode, state_abbreviations
 
-form_data = {
-    'wages': [
-        "w2", "wages", "wage", "employee", "employees", "employer", "employers",
-        "tips", "other", "12a", "12b", "12c", "12d", "ein"
-    ],
-    'retirement': [
-        "1099r", "retirement", "irr", "roth", "fatca", "distribution",
-        "distributions", "ira", "sep", "simple", "recipient", "recipients",
-        "payer", "payers", "gross"
-    ],
-    'interest': [
-        "interest", "1099int", "int", "payer", "payers", "withdrawal",
-        "recipient", "recipients", "savings", "treasury", "bond", "market"
-    ]
-}
+class Slice:
 
-class FormOcr:
+    key = None
+    value = None
+    
+    _key = None
+    _value = None
 
-    slices = []
-    slice_data = []
+    def __init__(self, path) -> None:
+        self.path = path
+        self.status = StatusCode.INITIATED
+
+    def recognize(self, psm=6, lang="eng"):
+        p = subprocess.run([
+            "tesseract.exe",
+            self.path,
+            "-",
+            "-l",
+            lang,
+            "--psm",
+            str(psm),
+        ], capture_output=True, text=True)
+
+        self.lines = p.stdout.splitlines()
+
+    def parse(self, form_type):
+        if len(self.lines) < 2:
+            self.status = StatusCode.FAILED
+            return
+
+        filtered_lines = []
+        for line in self.lines:
+            temp = self._filter_string(line)
+            if len(temp):
+                filtered_lines.append(temp)
+
+        self._key = filtered_lines[0]
+        self._value = filtered_lines[1:]
+        self.form_type = form_type
+
+    def print(self):
+        print("---------------------------------------")
+        match self.status:
+            case StatusCode.COMPLETED:
+                print("Key:   ", self.key)
+                print("Value: ", self.value)
+            case StatusCode.INITIATED:
+                print("Key:   Data unparsed")
+                print("Value: Data unparsed")
+            case _:
+                print("Key:   None")
+                print("Value: None")
+
+    def _filter_string(self, input):
+
+        # Keep only A-Z, 0-9, periods and spaces
+        pattern = r'[^a-zA-Z0-9.\* ]'
+        limited = re.sub(pattern, '', input).lower()
+
+        # Keep only periods followed by 0-9 (financial numbers)
+        filtered_string = re.sub(r'\.(?!\d)', '', limited)
+
+        #Remove extra whitespace
+        return re.sub(r'\s+', ' ', filtered_string).strip()
+
+    def sanitize(self):
+
+        if self._key is None or self._value is None:
+            return
+
+        form = key_data[self.form_type]
+        scores = {key: 0 for key in form.keys()}
+        words = self._key.split()
+
+        if len(words) > 20:
+            return
+
+        for word in words: 
+            for k, v in form.items():
+                for sub_v in v:
+                    if word == sub_v:
+                        scores[k] = scores[k] + 1
+
+        for k, v in scores.items():
+            if v > len(words):
+                scores[k] = -1
+
+        max_key = max(scores, key=lambda k: (scores[k]))
+
+        if scores[max_key] > len(words):
+            return
+        if scores[max_key] < int(len(words)*0.5):
+            return
+        if not scores[max_key]:
+            return
+
+        self.key = max_key
+        self.value = self._value
+        self.status = StatusCode.COMPLETED
+
+class Ocr:
 
     def __init__(self, directory) -> None:
+        self.slices: List[Slice] = []
         self.directory = directory
-        self.recognize()
-
-    def recognize(self):
+        self.ein = None
 
         def initial_processing(file):
             path = os.path.join(self.directory, file)
-            slice = SliceOcr(path)
+            slice = Slice(path)
             slice.recognize()
             self.slices.append(slice)
 
@@ -49,59 +128,11 @@ class FormOcr:
 
         self.get_general_info()
 
-    def get_general_info(self):
-        cleaned_words = []
-
-        for slice in self.slices:
-            for line in slice.data:
-                for word in line.split():
-                    cleaned_word = re.sub(r'[^a-zA-Z0-9]', '', word).lower()
-                    cleaned_words.append(cleaned_word)
-
-        parser = FormParser(cleaned_words)
-        self.form_type = parser.get_type()
-        self.form_year = parser.get_year()
-
-    def print(self):
-        for slice in self.slices:
-            #print(slice.data)
-            slice.parse()
-
-class SliceOcr:
-
-    def __init__(self, path) -> None:
-        self.path = path
-
-    def recognize(self, psm=6, lang="eng"):
-        p = subprocess.run([
-            "tesseract.exe",
-            self.path,
-            #out,
-            "-",
-            "-l",
-            lang,
-            "--psm",
-            str(psm),
-        ], capture_output=True, text=True)
-
-        self.data = p.stdout.splitlines()
-
-    def parse(self):
-        parser = SliceParser(self.data)
-        print("-------------------------------------")
-        print("Key:\t", parser.key)
-        print("Value:\t", parser.value)
-        print("-------------------------------------")
-
-class FormParser:
-    def __init__(self, form_words):
-        self.counter = Counter(form_words)
-
     def _count_matches(self, form_type_data) -> int:
         return sum({
             value: self.counter[value] for value in form_type_data}.values())
 
-    def get_type(self):
+    def _get_type(self):
 
         counts = dict() 
 
@@ -112,9 +143,9 @@ class FormParser:
         if counts[max_key] < 5:
             return None
 
-        return max_key
+        self.form_type = max_key
 
-    def get_year(self):
+    def _get_year(self):
         this_year = datetime.now().year
 
         common_year, common_count = 0, 0
@@ -125,65 +156,123 @@ class FormParser:
                 common_count = count
                 common_year = i
 
-        if common_year == 0:
-            return None
+        if common_year:
+            self.form_year = common_year
+            return
 
-        return common_year
+        self.form_year = None
 
-class SliceParser:
+    def _get_ein(self, words):
+        pattern = re.compile(r'\d{2}-\d{7}')
 
-    key = None
-    value = None
+        matches = []
+        for word in words:
+            if pattern.match(word):
+                matches.append(word)
 
-    def __init__(self, slice_lines) -> None:
-        match len(slice_lines):
-            case 1:
-                self.parse_single_line(slice_lines)
-            case 2:
-                self.parse_two_lines(slice_lines)
-            case 3 | 4:
-                self.parse_multi_lines(slice_lines)
+        if len(matches) == 1:
+            self.ein = matches[0]
+            return
 
-    def _line_is_dollar(self, line_words):
-        return len(line_words) == 1 and self._is_dollar(line_words[0])
+        for match in matches:
+            if int(match[:2]) in valid_ein_prefixes:
+                self.ein = match
+                return
 
-    def _is_dollar(self, word):
-        pattern = r'^\d{1,3}(,\d{3})*(\.\d+)?$'
-        return bool(re.fullmatch(pattern, word))
+        self.status = StatusCode.FAILED
 
-    # Will need to extend further
-    def parse_single_line(self, slice_lines):
-        return
-#        line_words = slice_lines[0].split()
-#
-#        if len(line_words) == 1:
-#            return
-#
-#        for i, word in enumerate(line_words):
-#            if self._is_dollar(word):
-#                self.key = line_words[0:i]
-#                self.value = word
-#                return
+    def get_general_info(self):
 
-    # Will need to extend further
-    def parse_two_lines(self, slice_lines):
-        self.key = slice_lines[0]
-        self.value = slice_lines[1]
+        cleaned_words = []
+        for slice in self.slices:
+            for line in slice.lines:
+                for word in line.split():
+                    cleaned_word = re.sub(r'[^a-zA-Z0-9\-]', '', word).lower()
+                    cleaned_words.append(cleaned_word)
+
+        self.counter = Counter(cleaned_words)
+        self._get_ein(cleaned_words)
+        self._get_type()
+        self._get_year()
+
+    def parse(self):
+        for _, slice in enumerate(self.slices):
+                slice.parse(self.form_type)
+                slice.sanitize()
+
+    def print(self):
+
+        print("Type: ", self.form_type)
+        print("Year: ", self.form_year)
+        print("EIN:  ", self.ein)
+
+        for slice in self.slices:
+            if slice.status == StatusCode.COMPLETED:
+                slice.print()
 
 
-    # Will need to extend further
-    def parse_multi_lines(self, slice_lines):
-        self.key = slice_lines[0]
-        self.value = slice_lines[1:]
-#
-#        top_words = slice_lines[0].split()
-#        if self._line_is_dollar(top_words):
-#            self.value = slice_lines[0]
-#            self.key = slice_lines[1:]
-#            return
-#
-#        bottom_words = slice_lines[-1].split()
-#        if self._line_is_dollar(bottom_words):
-#            self.value = slice_lines[-1]
-#            self.key = slice_lines[:-1]
-#            return
+class W2Adapter:
+
+    def __init__(self, key, value_lines) -> None:
+        self.key = key
+        self.value_lines = value_lines
+
+        match self.key:
+            case "c":
+                values = self.adapt_personal()
+                if values is None:
+                    return
+
+                d = {
+                    "employer_name": values[0],
+                    "employer_street": values[1],
+                    "employer_city": values[2],
+                    "employer_state": values[3],
+                    "employer_zip": values[4] 
+                }
+            case "e/f":
+                values = self.adapt_personal()
+                if values is None:
+                    return
+
+                d = {
+                    "employee_name": values[0],
+                    "employee_street": values[1],
+                    "employee_city": values[2],
+                    "employee_state": values[3],
+                    "employee_zip": values[4] 
+                }
+
+
+
+    def adapt_number(self):
+        if len(self.value_lines) > 1:
+            print("Too Many Lines")
+            return
+
+        value = self.value_lines[0]
+        #May need to make sure extra numbers do not collide
+        amount = float(re.sub(r'[^0-9.]', '', value))
+        return round(amount, 0)
+
+    def adapt_personal(self):
+        # will need to be able to process 4 lines
+        if len(self.value_lines) not in [3]:
+            print("Line Number incorrect")
+            return
+
+        name = str(self.value_lines[0]).upper()
+        address = str(self.value_lines[1]).upper()
+        address_two = self.value_lines[2].split()
+
+        if len(address_two) < 3:
+            return
+
+        zip_code = int(address_two[-1][:5])
+        state = str(address_two[-2][:2]).upper()
+        city = ' '.join(address_two[:-2]).upper()
+
+        if state not in state_abbreviations:
+            state = "CO"
+
+        return [name, address, city, state, zip_code]
