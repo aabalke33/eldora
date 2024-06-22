@@ -31,6 +31,8 @@ if __name__ == "__main__":
     #pool.starmap(process_image, zip(imgs, paths))
     #pool.close()
     #pool.join()
+
+    # Fix Slicer
     form = ocr.Ocr(directory)
     form.parse()
     form.print()

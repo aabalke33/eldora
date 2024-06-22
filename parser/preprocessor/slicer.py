@@ -6,6 +6,9 @@ import os
 
 class FormSlicer:
     def __init__(self, img):
+
+
+
         self.img = img
         self.width = self.img.shape[0]
         self.height = self.img.shape[1]
@@ -37,7 +40,7 @@ class FormSlicer:
         cv2.waitKey(0)
         cv2.destroyAllWindows()
 
-    def slice_form(self, sharpness=10, hierachy=cv2.RETR_EXTERNAL):
+    def slice_form(self, sharpness=12, hierachy=cv2.RETR_EXTERNAL):
 
         border_image = self._get_borders(sharpness)
         self.box_images, box_bounding = self._get_boxes(border_image, hierachy)
@@ -61,7 +64,7 @@ class FormSlicer:
             self.img = cv2.cvtColor(self.img, cv2.COLOR_GRAY2RGB)
 
         gray = cv2.cvtColor(self.img, cv2.COLOR_BGR2GRAY)
-        edges = cv2.Canny(gray, 50, 255)
+        edges = cv2.Canny(gray, 0, 255)
 
         contours, _ = cv2.findContours(
                 edges,
@@ -72,7 +75,14 @@ class FormSlicer:
         filtered_contours = []
         for contour in contours:
             area = cv2.contourArea(contour)
-            if area > 20000:
+            perimeter = cv2.arcLength(contour, True)
+            epsilon = 0.001
+            approx = cv2.approxPolyDP(contour, epsilon * cv2.arcLength(contour, True), True)
+
+            if (self._contour_angle(contour) and
+                perimeter > 750 and
+                len(approx) < 40 and
+                area > 100):
                 filtered_contours.append(contour)
 
         output_border = np.zeros((self.width, self.height, 3), np.uint8)
@@ -85,6 +95,24 @@ class FormSlicer:
                 )
 
         return output_border
+    def _contour_angle(self, contour) -> bool:
+
+        if len(contour) < 5:
+            return False
+
+        ellipse = cv2.fitEllipse(contour)
+        angle = ellipse[2]
+
+        d_err = 1
+
+        if ((angle > 0 and angle < d_err) or
+        (angle > 90-d_err and angle < d_err+90) or
+        (angle > 180-d_err and angle < d_err+180) or
+        (angle > 270-d_err and angle < d_err+270) or
+        (angle > 360-d_err and angle < 360)):
+            return True
+
+        return False
 
     def _filter_contours(self, contours, hierarchy, image_width, image_height):
 

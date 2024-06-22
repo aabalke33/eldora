@@ -1,111 +1,13 @@
 import re
-import subprocess
 import os
 from multiprocessing.dummy import Pool as ThreadPool
 from collections import Counter
 from datetime import datetime
 from typing import List
-from ocr.const import form_data, key_data, valid_ein_prefixes, StatusCode, state_abbreviations
-
-class Slice:
-
-    key = None
-    value = None
-    
-    _key = None
-    _value = None
-
-    def __init__(self, path) -> None:
-        self.path = path
-        self.status = StatusCode.INITIATED
-
-    def recognize(self, psm=6, lang="eng"):
-        p = subprocess.run([
-            "tesseract.exe",
-            self.path,
-            "-",
-            "-l",
-            lang,
-            "--psm",
-            str(psm),
-        ], capture_output=True, text=True)
-
-        self.lines = p.stdout.splitlines()
-
-    def parse(self, form_type):
-        if len(self.lines) < 2:
-            self.status = StatusCode.FAILED
-            return
-
-        filtered_lines = []
-        for line in self.lines:
-            temp = self._filter_string(line)
-            if len(temp):
-                filtered_lines.append(temp)
-
-        self._key = filtered_lines[0]
-        self._value = filtered_lines[1:]
-        self.form_type = form_type
-
-    def print(self):
-        print("---------------------------------------")
-        match self.status:
-            case StatusCode.COMPLETED:
-                print("Key:   ", self.key)
-                print("Value: ", self.value)
-            case StatusCode.INITIATED:
-                print("Key:   Data unparsed")
-                print("Value: Data unparsed")
-            case _:
-                print("Key:   None")
-                print("Value: None")
-
-    def _filter_string(self, input):
-
-        # Keep only A-Z, 0-9, periods and spaces
-        pattern = r'[^a-zA-Z0-9.\* ]'
-        limited = re.sub(pattern, '', input).lower()
-
-        # Keep only periods followed by 0-9 (financial numbers)
-        filtered_string = re.sub(r'\.(?!\d)', '', limited)
-
-        #Remove extra whitespace
-        return re.sub(r'\s+', ' ', filtered_string).strip()
-
-    def sanitize(self):
-
-        if self._key is None or self._value is None:
-            return
-
-        form = key_data[self.form_type]
-        scores = {key: 0 for key in form.keys()}
-        words = self._key.split()
-
-        if len(words) > 20:
-            return
-
-        for word in words: 
-            for k, v in form.items():
-                for sub_v in v:
-                    if word == sub_v:
-                        scores[k] = scores[k] + 1
-
-        for k, v in scores.items():
-            if v > len(words):
-                scores[k] = -1
-
-        max_key = max(scores, key=lambda k: (scores[k]))
-
-        if scores[max_key] > len(words):
-            return
-        if scores[max_key] < int(len(words)*0.5):
-            return
-        if not scores[max_key]:
-            return
-
-        self.key = max_key
-        self.value = self._value
-        self.status = StatusCode.COMPLETED
+from ocr.const import form_data, valid_ein_prefixes, StatusCode
+from ocr.slice import Slice
+from ocr.adapter import W2Adapter
+import json
 
 class Ocr:
 
@@ -196,83 +98,27 @@ class Ocr:
         self._get_year()
 
     def parse(self):
+
+        self.final = dict()
+
         for _, slice in enumerate(self.slices):
                 slice.parse(self.form_type)
                 slice.sanitize()
+                adapter = W2Adapter(slice.key, slice.value)
+                self.final = {**self.final, **adapter.get_dictionary()}
 
     def print(self):
+
 
         print("Type: ", self.form_type)
         print("Year: ", self.form_year)
         print("EIN:  ", self.ein)
 
-        for slice in self.slices:
-            if slice.status == StatusCode.COMPLETED:
-                slice.print()
+        if self.final is None:
+            for slice in self.slices:
+                if slice.status == StatusCode.COMPLETED:
+                    slice.print()
 
-
-class W2Adapter:
-
-    def __init__(self, key, value_lines) -> None:
-        self.key = key
-        self.value_lines = value_lines
-
-        match self.key:
-            case "c":
-                values = self.adapt_personal()
-                if values is None:
-                    return
-
-                d = {
-                    "employer_name": values[0],
-                    "employer_street": values[1],
-                    "employer_city": values[2],
-                    "employer_state": values[3],
-                    "employer_zip": values[4] 
-                }
-            case "e/f":
-                values = self.adapt_personal()
-                if values is None:
-                    return
-
-                d = {
-                    "employee_name": values[0],
-                    "employee_street": values[1],
-                    "employee_city": values[2],
-                    "employee_state": values[3],
-                    "employee_zip": values[4] 
-                }
-
-
-
-    def adapt_number(self):
-        if len(self.value_lines) > 1:
-            print("Too Many Lines")
             return
 
-        value = self.value_lines[0]
-        #May need to make sure extra numbers do not collide
-        amount = float(re.sub(r'[^0-9.]', '', value))
-        return round(amount, 0)
-
-    def adapt_personal(self):
-        # will need to be able to process 4 lines
-        if len(self.value_lines) not in [3]:
-            print("Line Number incorrect")
-            return
-
-        name = str(self.value_lines[0]).upper()
-        address = str(self.value_lines[1]).upper()
-        address_two = self.value_lines[2].split()
-
-        if len(address_two) < 3:
-            return
-
-        zip_code = int(address_two[-1][:5])
-        state = str(address_two[-2][:2]).upper()
-        city = ' '.join(address_two[:-2]).upper()
-
-        if state not in state_abbreviations:
-            state = "CO"
-
-        return [name, address, city, state, zip_code]
+        print(json.dumps(self.final, indent=4))
