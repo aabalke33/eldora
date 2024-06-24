@@ -64,7 +64,7 @@ key_data = {
             "13b": ["retirement", "ret", "plan"],
             "13c": ["3rd", "third", "part", "sick", "pay"],
             "14": [ "14", "14.", "other"],
-            "15a": ["state"],
+            "15a": ["15", "state"],
             "15": [ "15", "15.", "state", "employers", "state", "id", "number", "no."],
             "16": [ "16", "16.", "state", "wages", "tips", "etc"],
             "17": [ "17", "17.", "state", "income", "tax"],

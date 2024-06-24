@@ -33,10 +33,17 @@ class W2Adapter:
                     "employee_state": values[3],
                     "employee_zip": values[4] 
                 }
-            case ("1" | "2" | "3" | "4" | "5" |
-                "6" | "7" | "8" | "9" | "10" | "11"):
+            case ("1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" |
+                  "9" | "10" | "11" | "16" | "17" | "18" | "19"):
 
                 value = self.adapt_number()
+                if value is None:
+                    return
+
+                self.dictionary = {self.key: value}
+
+            case "15a":
+                value = self.adapt_state()
                 if value is None:
                     return
 
@@ -52,7 +59,13 @@ class W2Adapter:
 
         value = self.value_lines[0]
         #May need to make sure extra numbers do not collide
-        amount = float(re.sub(r'[^0-9.]', '', value))
+        amount = re.sub(r'[^0-9.]', '', value)
+
+        # Assumes if period is missing, need to add in
+        if "." in amount:
+            amount = float(amount)
+        else:
+            amount = float(amount) / 100
 
         if amount > 500_000:
             return None
@@ -97,6 +110,19 @@ class W2Adapter:
             state = "CO"
 
         return [name, street, city, state, zip_code]
+
+    def adapt_state(self):
+        if len(self.value_lines) != 1:
+            return
+
+        if len(self.value_lines[0]) != 2:
+            return
+
+        state = str(self.value_lines[:2]).upper()
+        if state not in state_abbreviations:
+            state = "CO"
+
+        return state
 
 #    def adapt_checkboxes(self):
 #        if len(self.value_lines) != 1:

@@ -20,20 +20,26 @@ def process_image(img, path):
     img = form.get_image()
     s = slicer.FormSlicer(img)
     s.slice_form()
-    s.export("export")
+    #s.export("export")
 
 if __name__ == "__main__":
 
     timer = Timer("All")
 
     #pool = ThreadPool(8)
-    #imgs, paths = converter.convert_files("./data/w2/adp")
+    imgs, paths = converter.convert_files("./data/w2/adp")
     #pool.starmap(process_image, zip(imgs, paths))
     #pool.close()
     #pool.join()
 
+    for img in imgs:
+        process_image(img, "")
+
+    #img = cv2.imread(path)
+    #process_image(img, "")
+
     # Fix Slicer
-    form = ocr.Ocr(directory)
-    form.parse()
-    form.print()
+    #form = ocr.Ocr(directory)
+    #form.parse()
+    #form.print()
     timer.stop()

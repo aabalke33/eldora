@@ -4,11 +4,15 @@ import math
 import uuid
 import os
 
+def show(img):
+    cv2.namedWindow("a", cv2.WINDOW_NORMAL)
+    cv2.imshow("a", img)
+    cv2.waitKey()
+    cv2.destroyAllWindows()
+    #exit(0)
+
 class FormSlicer:
     def __init__(self, img):
-
-
-
         self.img = img
         self.width = self.img.shape[0]
         self.height = self.img.shape[1]
@@ -46,7 +50,8 @@ class FormSlicer:
         self.box_images, box_bounding = self._get_boxes(border_image, hierachy)
 
         if len(self.box_images) in [0, 1] or self.box_images is None:
-            new_sharpness = math.floor(sharpness/2)
+            #new_sharpness = math.floor(sharpness/2)
+            new_sharpness = math.floor(sharpness-1)
             if new_sharpness:
                 self.slice_form(sharpness=new_sharpness)
             else:
@@ -81,7 +86,7 @@ class FormSlicer:
 
             if (self._contour_angle(contour) and
                 perimeter > 750 and
-                len(approx) < 40 and
+                len(approx) < 90 and
                 area > 100):
                 filtered_contours.append(contour)
 
@@ -94,6 +99,7 @@ class FormSlicer:
                 sharpness
                 )
 
+        show(output_border)
         return output_border
     def _contour_angle(self, contour) -> bool:
 
@@ -147,7 +153,10 @@ class FormSlicer:
 
     def _get_boxes(self, border_image, hierachy):
         gray = cv2.cvtColor(border_image, cv2.COLOR_BGR2GRAY)
-        edges = cv2.Canny(gray, 50, 150, apertureSize=3)
+
+        #show(gray)
+        #edges = cv2.Canny(gray, 50, 150, apertureSize=3)
+        edges = cv2.Canny(gray, 0, 255)
         contours, hierarchy = cv2.findContours(edges, hierachy, cv2.CHAIN_APPROX_SIMPLE)
 
         box_images, box_bounding = [], []
@@ -161,17 +170,18 @@ class FormSlicer:
     #        if hierachy == cv2.RETR_TREE and filtered_hierarchy[i][2] == -1:
     #            continue
 
-            has_nested = False
-            is_nested = False
-            for j, contour2 in enumerate(contours):
-                if i != j:
-                    if self._is_contour_within(contour, contour2):
-                        is_nested = True
-                    if self._is_contour_within(contour2, contour):
-                        has_nested = True
-
-            if is_nested or not has_nested:
-                final_contours.append(contour)
+#            has_nested = False
+#            is_nested = False
+#            for j, contour2 in enumerate(contours):
+#                if i != j:
+#                    if self._is_contour_within(contour, contour2):
+#                        is_nested = True
+#                    if self._is_contour_within(contour2, contour):
+#                        has_nested = True
+#
+#            if is_nested or not has_nested:
+#                final_contours.append(contour)
+            final_contours.append(contour)
 
         for i, contour in enumerate(final_contours):
             x, y, w, h = cv2.boundingRect(contour)

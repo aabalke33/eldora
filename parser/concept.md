@@ -1,5 +1,9 @@
 # Parser Concept
 
+
+Realized I have to define the bounding boxes to make it work.
+Ocr and slicer no longer work.
+
 Biggest problem is tesseract has trouble breaking down tables
 
 Steps
