@@ -8,6 +8,21 @@ import numpy as np
 
 Bbox = namedtuple("Bbox", ["x", "y", "w", "h"])
 
+def fix_currency_string(s):
+
+    if s.startswith('.'):
+        s = s[1:]
+
+    match = re.match(r"^(\d{1,3})(\.\d{3})*(\.\d{2})$", s)
+    if match:
+        parts = s.split('.', 1)
+        integer_part = parts[0]
+        decimal_part = parts[1]
+        integer_part = integer_part.replace('.', '')
+        return f"{integer_part}{decimal_part}"
+
+    return s
+
 class BoundingBox:
     def __init__(self, img, bbox: Bbox) -> None:
         
@@ -19,10 +34,11 @@ class BoundingBox:
         self.img = img[y:y + h, x:x + w]
         self.bbox = Bbox(x, y, w, h)
 
-    def draw(self, img, color=(0,0,255), thickness=30):
+    def draw(self, img, color=(0,0,255), thickness=10):
         x, y, w, h = self.bbox
 
         cv2.rectangle(img, (x, y), (x + w, y + h), color, thickness)
+
 
     def read(self, psm=3, lang="eng", user_pattern="number", bool_threshold=240):
 
@@ -72,20 +88,27 @@ class BoundingBox:
 
         p = subprocess.run(args, capture_output=True, text=True)
 
-        match user_pattern:
-            case "number":
-                output = re.sub("[^0-9.]", "", p.stdout)
-            case "ein" | "ssn":
-                output = re.sub("[^0-9]", "", p.stdout)
-            case "code" | "state":
-                output = re.sub("[^A-Z]", "", p.stdout)
-            case "checkbox":
-                output = re.sub("[^X]", "", p.stdout)
-            case "other":
-                output = re.sub("[^A-Z0-9a-z. \n\r]", "", p.stdout)
-            case "single":
-                output = re.sub("[\n]", "", p.stdout)
-            case _:
-                output = p.stdout
+        if p.stdout is None:
+            return ""
+        try: 
+            match user_pattern:
+                case "number":
+                    s = re.sub("[^0-9.]", "", p.stdout)
+                    output = fix_currency_string(s)
+                case "ein" | "ssn":
+                    output = re.sub("[^0-9]", "", p.stdout)
+                case "code" | "state":
+                    output = re.sub("[^A-Z]", "", p.stdout)
+                case "checkbox":
+                    output = re.sub("[^X]", "", p.stdout)
+                case "other":
+                    output = re.sub("[^A-Z0-9a-z. \n\r]", "", p.stdout)
+                case "single":
+                    output = re.sub("[\n]", "", p.stdout)
+                case _:
+                    output = p.stdout
+
+        except:
+            return ""
 
         return output

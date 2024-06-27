@@ -19,8 +19,12 @@ class FormImageProcessor:
     def export(self, path):
         cv2.imwrite(path, self.img)
 
-    def view(self):
-        cv2.imshow('Form', self.img)
+    def view(self, img=None):
+
+        cv2.namedWindow("Form", cv2.WINDOW_NORMAL)
+        if img is None:
+            img = self.img
+        cv2.imshow('Form', img)
         cv2.waitKey(0)
         cv2.destroyAllWindows()
 
@@ -39,9 +43,10 @@ class FormImageProcessor:
             self.state = 1
 
     def resize(self, ratio=3.0, img=None, interpolation=cv2.INTER_CUBIC, immutable=False):
-        height, width = self.img.shape[:2]
-        
-        if img is not None:
+
+        if img is None:
+            height, width = self.img.shape[:2]
+        else:
             height, width = img.shape[:2]
 
         image = cv2.resize(
@@ -49,8 +54,8 @@ class FormImageProcessor:
                 (int(width * ratio), int(height * ratio)),
                 interpolation=interpolation
                 )
-        #if immutable:
-        #    return image
+        if immutable:
+            return image
         
         self.img = image
 
@@ -91,7 +96,7 @@ class FormImageProcessor:
                     (x + w) < (width - margin) and
                     (y + h) < (height - margin)):
 
-                    if w * h < 0.9 * width * height:
+                    if w * h < 0.95 * width * height:
                         filtered_contours.append(contour)
         
             return filtered_contours
@@ -105,16 +110,19 @@ class FormImageProcessor:
         largest_contour = max(contours, key=cv2.contourArea)
         x, y, w, h = cv2.boundingRect(largest_contour)
 
-        temp_image = self.img[y:y+h, x:x+w]
-        self.img = temp_image
-        size_limit = 6000
-
-        if max(w, h) > size_limit:
-            self.state = -1
-        #    ratio = size_limit / max(w, h)
-        #    self.resize(ratio, temp_image, interpolation=cv2.INTER_AREA)
-        #    self.erosion()
-        #    self.crop_image()
+        self.bbox = largest_contour
+        self.contour_ratio = w / h
+#
+#        #temp_image = self.img[y:y+h, x:x+w]
+#        #self.img = temp_image
+#        size_limit = 6000
+#
+#        if max(w, h) > size_limit:
+#            self.state = -1
+#        #    ratio = size_limit / max(w, h)
+#        #    self.resize(ratio, temp_image, interpolation=cv2.INTER_AREA)
+#        #    self.erosion()
+#        #    self.crop_image()
 
     def erosion(self):
         size = 2
@@ -122,14 +130,18 @@ class FormImageProcessor:
         #self.img = cv2.dilate(self.img, kernel, iterations=1)
         self.img = cv2.erode(self.img, kernel, iterations=1)
 
-    def correct_skew(self, delta=1, limit=5):
+    def correct_skew(self, delta=1, limit=10):
         def determine_score(arr, angle):
             data = ndimage.rotate(arr, angle, reshape=False, order=0)
             histogram = np.sum(data, axis=1, dtype=float)
             score = np.sum((histogram[1:] - histogram[:-1]) ** 2, dtype=float)
             return histogram, score
+       
+        img = self.img
+        if len(self.img.shape) == 3:
+            img = cv2.cvtColor(self.img, cv2.COLOR_BGR2GRAY)
 
-        thresh = cv2.threshold(self.img, 0, 255, cv2.THRESH_BINARY_INV + 
+        thresh = cv2.threshold(img, 0, 255, cv2.THRESH_BINARY_INV + 
                 cv2.THRESH_OTSU)[1] 
 
         scores = []
@@ -147,3 +159,49 @@ class FormImageProcessor:
                 borderMode=cv2.BORDER_REPLICATE)
 
         self.img = corrected
+
+    def correct_perspective(self):
+        rect = cv2.minAreaRect(self.bbox)
+        #rect = cv2.boundingRect(self.bbox)
+
+        # Get the four points of the rectangle
+        box = cv2.boxPoints(rect)
+        #box = np.int32(box)
+        #temp = self.img
+        #cv2.rectangle(temp, rect, (0,0,255), 10)
+        #cv2.drawContours(temp,[box],0,(0,0,255),10)
+        #self.view(temp)
+        # Order the points in a consistent manner: top-left, top-right, bottom-right, bottom-left
+        def order_points(pts):
+            rect = np.zeros((4, 2), dtype="float32")
+
+            # the top-left point will have the smallest sum, whereas
+            # the bottom-right point will have the largest sum
+            s = pts.sum(axis=1)
+            rect[0] = pts[np.argmin(s)]
+            rect[2] = pts[np.argmax(s)]
+
+            # the top-right point will have the smallest difference,
+            # whereas the bottom-left will have the largest difference
+            diff = np.diff(pts, axis=1)
+            rect[1] = pts[np.argmin(diff)]
+            rect[3] = pts[np.argmax(diff)]
+
+            return rect
+
+        ordered_box = order_points(box)
+        # Get the width and height of the original image
+        orig_height, orig_width = self.img.shape[:2]
+
+        # Define the destination points to fit within the original image dimensions
+        dst_pts = np.array([
+            [0, 0],
+            [orig_width - 1, 0],
+            [orig_width - 1, orig_height - 1],
+            [0, orig_height - 1]], dtype="float32")
+
+        # Get the perspective transform matrix
+        M = cv2.getPerspectiveTransform(ordered_box, dst_pts)
+
+        # Apply the perspective transformation
+        self.img = cv2.warpPerspective(self.img, M, (orig_width, orig_height))
