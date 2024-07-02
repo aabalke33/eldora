@@ -54,8 +54,9 @@ if __name__ == "__main__":
     timer = Timer("All")
 
     #pool = ThreadPool(8)
-    imgs, paths = converter.convert_files("./data/ssa")
-    print("Here")
+    imgs, paths = converter.convert_files("./data/combined")
+    #for i, img in enumerate(imgs):
+    #    cv2.imwrite(f"./dataset/{i}.jpg", img)
     #pool.starmap(process_image, zip(i, imgs, paths))
     #pool.close()
     #pool.join()

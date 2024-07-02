@@ -9,25 +9,25 @@ def convert_files(directory: str):
     imgs = []
     paths = []
 
-    for file in os.listdir(directory):
+    for i, file in enumerate(os.listdir(directory)):
 
         source_path = f"{directory}/{file}"
 
-        if not os.path.isfile(source_path):
-            print(f"File {file} does not exist")
-            continue
+        #if not os.path.isfile(source_path):
+        #    print(f"File {file} does not exist")
+        #    continue
 
-        if file.endswith(".jpg") or file.endswith(".png"):
-            imgs.append(cv2.imread(source_path))
-            paths.append(source_path)
-            continue
+        #if file.endswith(".jpg") or file.endswith(".png"):
+        #    #imgs.append(cv2.imread(source_path))
+        #    #paths.append(source_path)
+        #    continue
 
         if file.endswith(".pdf"): 
-            convert_pdf(source_path, imgs, paths)
+            convert_pdf(source_path, imgs, paths, i)
 
     return imgs, paths
 
-def convert_pdf(source_path, imgs, paths):
+def convert_pdf(source_path, imgs, paths, i):
 
     poppler = os.environ['POPPLER_PATH']
 
@@ -36,8 +36,9 @@ def convert_pdf(source_path, imgs, paths):
             poppler_path=poppler
             )
 
-    for i, page in enumerate(pages):
+    for j, page in enumerate(pages):
         img = np.array(page)
         img = img[..., (2, 1, 0)]
-        imgs.append(img)
-        paths.append(f"Page {i+1} of {source_path}")
+        #imgs.append(img)
+        #paths.append(f"Page {i+1} of {source_path}")
+        cv2.imwrite(f"./dataset/{j}_{i}.jpg", img)
